@@ -2,9 +2,12 @@ package qin
 
 import qin.BasicLang.*
 
+import scala.collection.{immutable, mutable}
+import scala.collection.mutable.{HashMap, Map}
 import scala.reflect.Enum
 
 trait Lang extends Enum {
+  val localizedCache: mutable.Map[String, Localized[this.type]] = new mutable.HashMap()
 }
 
 /**
@@ -26,11 +29,14 @@ enum BasicLang extends Lang {
 trait Complete[L <: Lang]
 
 object Complete {
+  /**
+   * If you define any more specific and "matching" Complete Given, this won’t be used here.
+   */
   @deprecated("Translation missing. This will fall back to English or the first defined language at runtime.")
   given incomplete[L <: Lang]: Complete[L] = new Complete[L] {}
 }
 
-case class Localized[L <: Lang](supported: Map[Lang, String]) {
+case class Localized[L <: Lang](supported: immutable.Map[Lang, String]) {
   def |[L2 <: Lang](l: Localized[L2]): Localized[L & L2] = {
     Localized[L & L2](supported ++ l.supported)
   }
@@ -40,7 +46,7 @@ case class Localized[L <: Lang](supported: Map[Lang, String]) {
 }
 
 extension (t: String)
-  def in(l: Lang): Localized[l.type] = Localized[l.type](Map(l -> t))
+  def in(l: Lang): Localized[l.type] = l.localizedCache.getOrElseUpdate(t,Localized[l.type](immutable.Map(l -> t)))
 
 object Qin {
   var currentLang: Lang = En
