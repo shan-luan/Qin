@@ -6,7 +6,7 @@ import qin.BasicLang.*
  * And can normally participate in type partial ordering.*/
 type Chinglish = En.type & Zh.type
 
-given complete[L <: Chinglish]: Complete[L] = new Complete[L] {}
+given chEnZh[L <: Chinglish]: Target[L] = new Target[L] {}
 
 class QinTest extends munit.FunSuite {
   test("str resolves currentLang") {
@@ -27,13 +27,13 @@ class QinTest extends munit.FunSuite {
     assertEquals(l.str(), "Hallo")
   }
 
-  test("str per declared targets complete") {
+  test("str per declared targets fully translated") {
     Qin.currentLang = Zh
     val l = "Hello".in(En) | "你好".in(Zh)
     assertEquals(l.str(), "你好")
   }
 
-  test("str per declared targets incomplete") {
+  test("str per declared targets partially translated") {
     Qin.currentLang = En
     val l = "Hello".in(En) | "Hola".in(Es)
     assertEquals(l.str(), "Hello")

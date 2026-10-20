@@ -1,3 +1,12 @@
+/**
+ * Copyright (c) 2026 shan-luan
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package qin
 
 import qin.BasicLang.*
@@ -26,27 +35,32 @@ enum BasicLang extends Lang {
   case Zh //Chinese
 }
 
-trait Complete[L <: Lang]
+trait Target[L <: Lang]
 
-object Complete {
+object Target {
   /**
-   * If you define any more specific and "matching" Complete Given, this won’t be used here.
+   * If you define any more specific and "matching" Target Given, this won’t be used here.
    */
-  @deprecated("Translation missing. This will fall back to English or the first defined language at runtime.")
-  given incomplete[L <: Lang]: Complete[L] = new Complete[L] {}
+  @deprecated("Translation missing. This will fall back to English or random language at runtime.")
+  given fallback[L <: Lang]: Target[L] = new Target[L] {}
 }
 
-case class Localized[L <: Lang](supported: immutable.Map[Lang, String]) {
-  def |[L2 <: Lang](l: Localized[L2]): Localized[L & L2] = {
-    Localized[L & L2](supported ++ l.supported)
-  }
+case class Localized[L <: Lang] private (supported: immutable.Map[Lang, String]) {
+  def |[L2 <: Lang](l: Localized[L2]): Localized[L & L2] =
+    Localized.of[L & L2](supported ++ l.supported)
 
-  def str()(using Complete[L]): String =
+  def str()(using Target[L]): String =
     supported.get(Qin.currentLang).orElse(supported.get(En)).getOrElse(supported.head._2)
 }
 
+object Localized {
+  private[qin] def of[L <: Lang](supported: immutable.Map[Lang, String]): Localized[L] =
+    new Localized(supported)
+}
+
 extension (t: String)
-  def in(l: Lang): Localized[l.type] = l.localizedCache.getOrElseUpdate(t,Localized[l.type](immutable.Map(l -> t)))
+  def in(l: Lang): Localized[l.type] =
+    l.localizedCache.getOrElseUpdate(t, Localized.of[l.type](immutable.Map(l -> t)))
 
 object Qin {
   var currentLang: Lang = En
